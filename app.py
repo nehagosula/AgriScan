@@ -19,7 +19,8 @@ class_names = [
     "Healthy Rice Leaf",
     "Leaf Blast",
     "Leaf Scald",
-    "Sheath Blight"
+    "Sheath Blight"|
+    "Unknown"
 ]
 
 app = Flask(__name__)
