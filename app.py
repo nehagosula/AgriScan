@@ -8,7 +8,7 @@ from PIL import Image
 from tensorflow.keras.models import load_model
 
 # ---------------- CONFIG ---------------- #
-MODEL_PATH = Path("agriscan_model.h5")
+MODEL_PATH = Path(__file__).parent / "agriscan_model.h5"
 IMAGE_SIZE = (224, 224)
 UNKNOWN_THRESHOLD = 0.60
 
