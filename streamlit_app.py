@@ -1,16 +1,15 @@
 import os
-
 import requests
 import streamlit as st
 from PIL import Image
 
-
-DEFAULT_BACKEND_URL =  "https://agriscan-one7.onrender.com"
+DEFAULT_BACKEND_URL = "https://agriscan-one7.onrender.com/api/predict"
 BACKEND_URL = os.environ.get("AGRISCAN_BACKEND_URL", DEFAULT_BACKEND_URL)
 
 
 def predict_with_backend(uploaded_file):
     uploaded_file.seek(0)
+
     files = {
         "file": (
             uploaded_file.name,
@@ -18,6 +17,7 @@ def predict_with_backend(uploaded_file):
             uploaded_file.type or "application/octet-stream",
         )
     }
+
     response = requests.post(BACKEND_URL, files=files, timeout=120)
     response.raise_for_status()
     return response.json()
@@ -26,6 +26,7 @@ def predict_with_backend(uploaded_file):
 def show_prediction(result: dict) -> None:
     prediction = result["prediction"]
     confidence = float(result["confidence"])
+
     display_prediction = "Healthy" if "Healthy" in prediction else prediction
 
     st.subheader("Prediction Result")
@@ -34,7 +35,9 @@ def show_prediction(result: dict) -> None:
     st.progress(min(max(confidence / 100, 0.0), 1.0))
 
     if prediction == "Unknown":
-        st.warning("Unknown leaf condition detected. The model confidence is below 60% or the image is outside known classes.")
+        st.warning(
+            "Unknown leaf condition detected. The model confidence is below threshold or image is unclear."
+        )
     elif "Healthy" in prediction:
         st.success("Healthy rice leaf detected.")
     else:
@@ -45,13 +48,13 @@ def show_prediction(result: dict) -> None:
     st.write(f"**Treatment suggestion:** {result['treatment']}")
 
 
-def main() -> None:
+def main():
     st.set_page_config(
         page_title="AgriScan - Rice Leaf Disease Detector",
         layout="centered",
     )
 
-    st.title("AgriScan - Rice Leaf Disease Detector")
+    st.title("🌾 AgriScan - Rice Leaf Disease Detector")
 
     uploaded_file = st.file_uploader(
         "Upload a close-up rice leaf image",
@@ -59,22 +62,23 @@ def main() -> None:
     )
 
     if uploaded_file is None:
-        st.info("Upload a close-up rice leaf image to begin detection.")
+        st.info("Upload a rice leaf image to begin detection.")
         return
 
     image = Image.open(uploaded_file)
     st.image(image, caption="Uploaded Image", width="stretch")
 
     if st.button("Analyze Disease"):
-        with st.spinner("Sending image to Flask backend..."):
+        with st.spinner("Analyzing... please wait"):
             try:
                 result = predict_with_backend(uploaded_file)
+
             except requests.exceptions.ConnectionError:
                 st.error(
-                    "Cannot connect to Flask backend. Start it with `python app.py`, "
-                    "then run this Streamlit app again."
+                    "Cannot connect to backend. The server may be sleeping (Render free tier). Try again in a few seconds."
                 )
                 return
+
             except requests.exceptions.RequestException as exc:
                 st.error(f"Backend request failed: {exc}")
                 return
