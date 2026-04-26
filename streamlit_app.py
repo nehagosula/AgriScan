@@ -5,7 +5,7 @@ import streamlit as st
 from PIL import Image
 
 
-DEFAULT_BACKEND_URL = "http://127.0.0.1:5000/api/predict"
+DEFAULT_BACKEND_URL =  "https://agriscan-one7.onrender.com"
 BACKEND_URL = os.environ.get("AGRISCAN_BACKEND_URL", DEFAULT_BACKEND_URL)
 
 
