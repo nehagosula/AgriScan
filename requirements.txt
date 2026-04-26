@@ -1,3 +1,5 @@
-streamlit
-requests
+tensorflow-cpu==2.13.0
+flask
+numpy
 pillow
+gunicorn
