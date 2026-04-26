@@ -57,8 +57,15 @@ DISEASE_INFO = {
 }
 
 # ---------------- LOAD MODEL SAFELY ---------------- #
+
 model = None
 
+def get_model():
+    global model
+    if model is None:
+        print("Loading model now...")
+        model = load_prediction_model()
+    return model
 def load_prediction_model():
     global model
     try:
