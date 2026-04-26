@@ -8,7 +8,8 @@ from PIL import Image
 from tensorflow.keras.models import load_model
 
 # ---------------- CONFIG ---------------- #
-MODEL_PATH = Path(__file__).parent / "agriscan_model.h5"
+BASE_DIR = Path(__file__).parent
+MODEL_PATH = BASE_DIR / "agriscan_model.h5"
 IMAGE_SIZE = (224, 224)
 UNKNOWN_THRESHOLD = 0.60
 
@@ -56,31 +57,36 @@ DISEASE_INFO = {
     },
 }
 
-# ---------------- LOAD MODEL SAFELY ---------------- #
-
+# ---------------- MODEL LOADING ---------------- #
 model = None
+
+def load_prediction_model():
+    try:
+        print("Checking model path:", MODEL_PATH)
+
+        if not MODEL_PATH.exists():
+            print(" Model file NOT found!")
+            return None
+
+        print("Files in directory:", os.listdir(BASE_DIR))
+
+        loaded_model = load_model(MODEL_PATH)
+        print(" Model loaded successfully")
+
+        return loaded_model
+
+    except Exception as e:
+        print(" Model loading failed:", e)
+        return None
+
 
 def get_model():
     global model
     if model is None:
-        print("Loading model now...")
+        print(" Loading model now...")
         model = load_prediction_model()
     return model
-def load_prediction_model():
-    global model
-    try:
-        print("Checking model path:", MODEL_PATH)
-        if not MODEL_PATH.exists():
-            raise FileNotFoundError("Model file not found")
 
-        model = load_model(MODEL_PATH)
-        print(" Model loaded successfully")
-
-    except Exception as e:
-        print(" Model loading failed:", e)
-        model = None
-
-load_prediction_model()
 
 # ---------------- PREPROCESS ---------------- #
 def preprocess_image(uploaded_file):
@@ -89,12 +95,16 @@ def preprocess_image(uploaded_file):
     image_array = np.asarray(image, dtype=np.float32) / 255.0
     return np.expand_dims(image_array, axis=0)
 
+
 # ---------------- PREDICTION ---------------- #
 def classify_image(image_array):
-    if model is None:
+    model_instance = get_model()
+
+    if model_instance is None:
+        print(" Model not loaded, returning Unknown")
         return "Unknown", 0.0
 
-    probabilities = model.predict(image_array, verbose=0)[0]
+    probabilities = model_instance.predict(image_array, verbose=0)[0]
     predicted_index = int(np.argmax(probabilities))
     confidence = float(probabilities[predicted_index])
 
@@ -105,14 +115,18 @@ def classify_image(image_array):
 
     return prediction, confidence
 
+
 # ---------------- ROUTES ---------------- #
 @app.route("/", methods=["GET"])
 def home():
     return jsonify({
         "status": "running",
-        "model_loaded": model is not None,
+        "model_loaded": get_model() is not None,
+        "model_path": str(MODEL_PATH),
+        "files_here": os.listdir(BASE_DIR),
         "classes": class_names
     })
+
 
 @app.route("/api/predict", methods=["POST"])
 def api_predict():
@@ -135,11 +149,12 @@ def api_predict():
         })
 
     except Exception as exc:
-        print(" Prediction error:", exc)
+        print("Prediction error:", exc)
         return jsonify({"error": str(exc)}), 500
+
 
 # ---------------- RUN APP ---------------- #
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
-    print(" Starting server on port:", port)
+    print(f" Starting server on port {port}")
     app.run(host="0.0.0.0", port=port)
