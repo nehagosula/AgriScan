@@ -71,7 +71,11 @@ def load_prediction_model():
 
         print("Files in directory:", os.listdir(BASE_DIR))
 
-        loaded_model = load_model(MODEL_PATH)
+        loaded_model = load_model(
+    MODEL_PATH,
+    compile=False,
+    safe_mode=False
+)
         print(" Model loaded successfully")
 
         return loaded_model
